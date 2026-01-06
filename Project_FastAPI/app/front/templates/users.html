@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Пользователи</title>
+</head>
+<body>
+    <h1>Список пользователей</h1>
+
+    <ul>
+        {% for user in users %}
+        <li>
+            {{ user.username }}
+            — <a href="/users/{{ user.id }}/notes_page">Заметки</a>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <h2>Создать нового пользователя</h2>
+    <form method="post" action="/users/create">
+        <input type="text" name="username" placeholder="Имя пользователя" required>
+        <button type="submit">Создать</button>
+    </form>
+
+    <p><a href="/">На главную</a></p>
+</body>
+</html>

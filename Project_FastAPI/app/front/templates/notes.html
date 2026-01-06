@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Заметки {{ user.username }}</title>
+</head>
+<body>
+    <h1>Заметки пользователя: {{ user.username }}</h1>
+
+    {% if notes %}
+        <ul>
+            {% for note in notes %}
+            <li><strong>{{ note.title }}</strong>: {{ note.content }}
+                <small>Создано: {{ note.created_at.strftime("%Y-%m-%d %H:%M:%S") }}</small></li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>У этого пользователя пока нет заметок.</p>
+    {% endif %}
+
+    <h2>Добавить заметку</h2>
+    <form method="post" action="/users/{{ user.id }}/notes/create">
+        <input type="text" name="title" placeholder="Заголовок" required><br>
+        <textarea name="content" placeholder="Текст заметки" required></textarea><br>
+        <button type="submit">Сохранить</button>
+    </form>
+
+    <p><a href="/users">Назад к пользователям</a></p>
+
+</body>
+</html>
