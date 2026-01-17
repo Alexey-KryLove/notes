@@ -11,14 +11,15 @@ class User(Base):
     __tablename__ = "users" # имя таблицы в БД
 
     # id — первичный ключ (уникальный идентификатор записи)
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
     # username — имя пользователя, должно быть уникальным и не NULL
-    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    username: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    hashed_password: Mapped[str] = mapped_column(String, nullable=False)
 
     # Связь «один-ко-многим»: у пользователя может быть много заметок
     # back_populates связывает это поле с полем Note.owner
-    notes: Mapped[List["Note"]] = relationship(back_populates="owner", cascade="all, delete-orphan")
+    notes: Mapped[List["Note"]] = relationship(back_populates="owner")
 
 
 # Модель заметки — таблица notes

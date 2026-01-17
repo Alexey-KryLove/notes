@@ -5,6 +5,7 @@ from datetime import datetime
 # Входная схема для создания пользователя
 class UserCreate(BaseModel):
     username: str # только имя, без пароля на этом шаге
+    password: str
 
 
 # Выходная схема пользователя (что отдаём наружу)
@@ -34,3 +35,9 @@ class NoteOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+class UserPublic(BaseModel):
+    id: int
+    username: str
+
+    model_config = {"from_attributes": True}

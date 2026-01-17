@@ -9,9 +9,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 
 from .db import init_db, get_session, AsyncSession
-from .schemas import UserCreate, UserOut, NoteCreate, NoteOut
+from .schemas import UserCreate, UserOut, NoteCreate, NoteOut, UserPublic
 from .models import User
 from . import crud
+from .auth import hash_password
 
 
 # Создаём экземпляр приложения FastAPI
@@ -65,6 +66,29 @@ async def create_note_endpoint(
     return note #{"success": True, "message": "Заметка создана"}
 
 
+@app.post("/register", response_model=UserPublic)
+async def register_user(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
+    # Проверяем, существует ли такой пользователь
+    stmt = select(User).where(User.username == user_data.username)
+    result = await db.execute(stmt)
+    existing = result.scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=400, detail="Username already taken")
+
+    # Создаём нового пользователя
+    new_user = User(
+        username=user_data.username,
+        hashed_password=hash_password(user_data.password)
+    )
+
+    db.add(new_user)
+    await db.commit()
+    await db.refresh(new_user)
+
+    return new_user
+
+
+
 # Эндпоинт: получить все заметки пользователя
 @app.get("/users/{user_id}/notes",summary="Получение всех заметок пользователя", response_model=list[NoteOut], tags=["api"])
 async def list_user_notes(
@@ -88,6 +112,14 @@ async def list_user_notes(
 @app.get("/", response_class=HTMLResponse, tags=["front"])
 async def home (request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+#Регистрация
+
+@app.get("/register-form", response_class=HTMLResponse)
+async def register_form(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request})
+
 
 # Создание пользователя
 
