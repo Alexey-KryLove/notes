@@ -18,9 +18,9 @@ from .auth import hash_password
 # Создаём экземпляр приложения FastAPI
 app = FastAPI(title="Notes Service — Step 3: API + HTML Frontend")
 
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory="app/front/templates")
 
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/static", StaticFiles(directory="app/front/static"), name="static")
 
 
 
@@ -67,7 +67,7 @@ async def create_note_endpoint(
 
 
 @app.post("/register", response_model=UserPublic)
-async def register_user(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
+async def register_user(user_data: UserCreate, db: AsyncSession = Depends(get_session)):
     # Проверяем, существует ли такой пользователь
     stmt = select(User).where(User.username == user_data.username)
     result = await db.execute(stmt)
