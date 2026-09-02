@@ -1,22 +1,20 @@
 from tempfile import template
-
+from pyexpat.errors import messages
 from fastapi import FastAPI, Depends, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from pyexpat.errors import messages
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
-
 from .db import init_db, get_session, AsyncSession
-from .schemas import UserCreate, UserOut, NoteCreate, NoteOut, UserPublic
+from .schemas import UserCreate, NoteCreate, NoteOut, UserPublic
 from .models import User
 from . import crud
 from .auth import hash_password
 
 
 # Создаём экземпляр приложения FastAPI
-app = FastAPI(title="Notes Service — Step 3: API + HTML Frontend")
+app = FastAPI(title="Notes Service — version 3: API + HTML Frontend")
 
 templates = Jinja2Templates(directory="app/front/templates")
 
@@ -33,18 +31,18 @@ async def on_startup() -> None:
 #   API эндпоинты
 # -------------------
 
-# Эндпоинт: создать пользователя
-@app.post("/users", summary="Создание пользователя", response_model=UserOut, status_code=201, tags=["api"])
-async def create_user_endpoint(
-    payload: UserCreate, # тело запроса (JSON) → UserCreate
-    session: AsyncSession = Depends(get_session) # берём сессию из зависимости
-):
-    try:
-        user = await crud.create_user(session, username=payload.username)
-    except IntegrityError:
-# 409 — конфликт (например, нарушена уникальность username)
-        raise HTTPException(status_code=409, detail="Пользователь уже существует")
-    return user #{"success": True, "message": "Успешное создание пользователя"}
+# # Эндпоинт: создать пользователя
+# @app.post("/users", summary="Создание пользователя", response_model=UserOut, status_code=201, tags=["api"])
+# async def create_user_endpoint(
+#     payload: UserCreate, # тело запроса (JSON) → UserCreate
+#     session: AsyncSession = Depends(get_session) # берём сессию из зависимости
+# ):
+#     try:
+#         user = await crud.create_user(session, username=payload.username)
+#     except IntegrityError:
+# # 409 — конфликт (например, нарушена уникальность username)
+#         raise HTTPException(status_code=409, detail="Пользователь уже существует")
+#     return user #{"success": True, "message": "Успешное создание пользователя"}
 
 
 # Эндпоинт: создать заметку для существующего пользователя
@@ -129,7 +127,7 @@ async def user_page(request: Request, session: AsyncSession = Depends(get_sessio
     users = result.scalars().all()
     return templates.TemplateResponse("users.html", {"request": request, "users": users})
 
-@app.post("users/create", tags=["front"])
+@app.post("/users/create", tags=["front"])
 async def create_user_from(
         username: str = Form(...),
         session: AsyncSession = Depends(get_session)
