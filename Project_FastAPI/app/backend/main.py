@@ -92,15 +92,21 @@ async def list_user_notes(
 # Главная страница
 
 @app.get("/", response_class=HTMLResponse, tags=["front"])
-async def home (request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+async def home(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+    )
 
 
 #Регистрация
 
 @app.get("/register-form", response_class=HTMLResponse)
 async def register_form(request: Request):
-    return templates.TemplateResponse("register.html", {"request": request})
+    return templates.TemplateResponse(
+        request=request,
+        name="register.html",
+    )
 
 
 # Создание пользователя
@@ -109,9 +115,13 @@ async def register_form(request: Request):
 async def user_page(request: Request, session: AsyncSession = Depends(get_session)):
     result = await session.execute(select(User))
     users = result.scalars().all()
-    return templates.TemplateResponse("users.html", {"request": request, "users": users})
+    return templates.TemplateResponse(
+        request=request,
+        name="users.html",
+        context={"users": users},
+    )
 
-@app.post("/users/create", tags=["front"])
+@app.post("/user/create", tags=["front"])
 async def create_user_from(
         username: str = Form(...),
         password: str = Form(...),
@@ -151,12 +161,12 @@ async def notes_page(
 
     notes = await crud.get_user_notes(session, owner_id=user_id)
     return templates.TemplateResponse(
-        "notes_user.html",
-        {
-            "request": request,
+        request=request,
+        name="notes_user.html",
+        context={
             "user": user,
-            "notes": notes
-        }
+            "notes": notes,
+        },
     )
 
 # Создание заметки
@@ -193,9 +203,9 @@ async def create_note_page(
             detail="Пользователь не найден",
         )
     return templates.TemplateResponse(
-        "notes.html",
-        {
-            "request": request,
+        request=request,
+        name="notes.html",
+        context={
             "user": user,
         },
     )
