@@ -1,31 +1,22 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Заметки {{ user.username }}</title>
+    <title>Создать заметку</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <h1>Заметки пользователя: {{ user.username }}</h1>
-
-    {% if notes %}
-        <ul>
-            {% for note in notes %}
-            <li><strong>{{ note.title }}</strong>: {{ note.content }}
-                <small>Создано: {{ note.created_at.strftime("%Y-%m-%d %H:%M:%S") }}</small></li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>У этого пользователя пока нет заметок.</p>
-    {% endif %}
-
-    <h2>Добавить заметку</h2>
-    <form method="post" action="/users/{{ user.id }}/notes/create">
-        <input type="text" name="title" placeholder="Заголовок" required><br>
-        <textarea name="content" placeholder="Текст заметки" required></textarea><br>
-        <button type="submit">Сохранить</button>
+    <h1>Создание новой заметки</h1>
+    <form action="/users/{{ user.id }}/notes/create" method="post">
+        <div>
+            <label for="title">Заголовок:</label>
+            <input type="text" id="title" name="title" required>
+        </div>
+        <div>
+            <label for="content">Содержание:</label>
+            <textarea id="content" name="content" rows="10" required></textarea>
+        </div>
+        <button type="submit">Создать заметку</button>
     </form>
-
-    <p><a href="/users">Назад к пользователям</a></p>
-
+    <a href="/users/{{ user.id }}/notes_page">Вернуться к заметкам</a>
 </body>
 </html>

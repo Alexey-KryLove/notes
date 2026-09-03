@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Заметки пользователя</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Заметки пользователя {{ user.username }}</h1>
+    <a href="/users/{{ user.id }}/notes/create">Создать новую заметку</a>
+
+    <ul>
+        {% for note in notes %}
+            <li>
+                <h2>{{ note.title }}</h2>
+                <p>{{ note.content }}</p>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <a href="/users">Вернуться к списку пользователей</a>
+</body>
+</html>
