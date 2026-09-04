@@ -1,11 +1,35 @@
+<!-- app/front/templates/index.html -->
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>Notes Service</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <h1>Добро пожаловать в Notes Service</h1>
-    <p><a href="/users">Перейти к пользователям</a></p>
+
+    <main>
+        <section>
+            <h2>Добро пожаловать!</h2>
+            <p>Это главный экран приложения для работы с заметками.</p>
+            <p>Выберите действие:</p>
+
+            <ul class="actions">
+                <li>
+                    <a href="/register-form" class="button">
+                        Зарегистрироваться
+                    </a>
+                </li>
+                <li>
+                    <a href="/users">
+                        <button>Войти как существующий пользователь</button>
+                    </a>
+                </li>
+            </ul>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Notes Service</p>
+    </footer>
 </body>
 </html>

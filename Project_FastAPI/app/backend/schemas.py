@@ -1,28 +1,33 @@
-from pydantic import BaseModel
 from datetime import datetime
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # Входная схема для создания пользователя
 class UserCreate(BaseModel):
-    username: str # только имя, без пароля на этом шаге
+    username: str = Field(
+        min_length= 3,
+        max_length= 50,
+    )
+    password: str = Field(
+        min_length= 6,
+        max_length= 128,
+    )
 
-
-# Выходная схема пользователя (что отдаём наружу)
-class UserOut(BaseModel):
+class UserPublic(BaseModel):
     id: int
     username: str
 
-    class Config:
-        from_attributes = True # позволяет строить схему прямо из ORM-объекта
-
+    model_config = ConfigDict(from_attributes=True)
 
 # Входная схема для создания заметки
 class NoteCreate(BaseModel):
-    title: str
-    content: str
-    created_at: datetime
-    owner_id: int # id владельца заметки
-
+    title: str = Field(
+        min_length=1,
+        max_length=200,
+    )
+    content: str = Field(
+        min_length=1,
+    )
 
 # Выходная схема заметки
 class NoteOut(BaseModel):
@@ -32,5 +37,6 @@ class NoteOut(BaseModel):
     created_at: datetime
     owner_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+

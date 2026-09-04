@@ -1,25 +1,22 @@
-from tempfile import template
-
 from fastapi import FastAPI, Depends, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from pyexpat.errors import messages
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
-
 from .db import init_db, get_session, AsyncSession
-from .schemas import UserCreate, UserOut, NoteCreate, NoteOut
+from .schemas import UserCreate, NoteCreate, NoteOut, UserPublic
 from .models import User
 from . import crud
+from .auth import hash_password
 
 
 # Создаём экземпляр приложения FastAPI
-app = FastAPI(title="Notes Service — Step 3: API + HTML Frontend")
+app = FastAPI(title="Notes Service — version 3: API + HTML Frontend")
 
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory="app/front/templates")
 
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/static", StaticFiles(directory="app/front/static"), name="static")
 
 
 
@@ -31,20 +28,6 @@ async def on_startup() -> None:
 # -------------------
 #   API эндпоинты
 # -------------------
-
-# Эндпоинт: создать пользователя
-@app.post("/users", summary="Создание пользователя", response_model=UserOut, status_code=201, tags=["api"])
-async def create_user_endpoint(
-    payload: UserCreate, # тело запроса (JSON) → UserCreate
-    session: AsyncSession = Depends(get_session) # берём сессию из зависимости
-):
-    try:
-        user = await crud.create_user(session, username=payload.username)
-    except IntegrityError:
-# 409 — конфликт (например, нарушена уникальность username)
-        raise HTTPException(status_code=409, detail="Пользователь уже существует")
-    return user #{"success": True, "message": "Успешное создание пользователя"}
-
 
 # Эндпоинт: создать заметку для существующего пользователя
 @app.post("/notes", summary="Создание заметки", response_model=NoteOut, status_code=201, tags=["api"])
@@ -63,6 +46,29 @@ async def create_note_endpoint(
         session, owner_id=payload.owner_id, title=payload.title, content=payload.content
     )
     return note #{"success": True, "message": "Заметка создана"}
+
+
+# @app.post("/register", response_model=UserPublic)
+# async def register_user(user_data: UserCreate, db: AsyncSession = Depends(get_session)):
+#     # Проверяем, существует ли такой пользователь
+#     stmt = select(User).where(User.username == user_data.username)
+#     result = await db.execute(stmt)
+#     existing = result.scalar_one_or_none()
+#     if existing:
+#         raise HTTPException(status_code=400, detail="Username already taken")
+#
+#     # Создаём нового пользователя
+#     new_user = User(
+#         username=user_data.username,
+#         hashed_password=hash_password(user_data.password)
+#     )
+#
+#     db.add(new_user)
+#     await db.commit()
+#     await db.refresh(new_user)
+#
+#     return new_user
+
 
 
 # Эндпоинт: получить все заметки пользователя
@@ -86,8 +92,22 @@ async def list_user_notes(
 # Главная страница
 
 @app.get("/", response_class=HTMLResponse, tags=["front"])
-async def home (request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+async def home(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+    )
+
+
+#Регистрация
+
+@app.get("/register-form", response_class=HTMLResponse)
+async def register_form(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="register.html",
+    )
+
 
 # Создание пользователя
 
@@ -95,31 +115,59 @@ async def home (request: Request):
 async def user_page(request: Request, session: AsyncSession = Depends(get_session)):
     result = await session.execute(select(User))
     users = result.scalars().all()
-    return templates.TemplateResponse("users.html", {"request": request, "users": users})
+    return templates.TemplateResponse(
+        request=request,
+        name="users.html",
+        context={"users": users},
+    )
 
-@app.post("users/create", tags=["front"])
+@app.post("/user/create", tags=["front"])
 async def create_user_from(
         username: str = Form(...),
-        session: AsyncSession = Depends(get_session)
+        password: str = Form(...),
+        session: AsyncSession = Depends(get_session),
 ):
     try:
-        await crud.create_user(session, username=username)
+        hashed_password = hash_password(password)
+
+        await crud.create_user(
+            session=session,
+            username=username,
+            hashed_password=hashed_password,
+        )
     except IntegrityError:
-        return HTMLResponse("Пользователь уже существует", status_code=400)
-    return RedirectResponse(url="/user",status_code=303)
+        return HTMLResponse(
+            "Пользователь уже существует",
+            status_code=409,
+        )
+    return RedirectResponse(
+        url="/users",
+        status_code=303,
+    )
 
 
 # Заметки пользователя
 
 @app.get("/users/{user_id}/notes_page", response_class=HTMLResponse, tags=["front"])
-async def notes_page(user_id: int, request: Request, session: AsyncSession = Depends(get_session)):
+async def notes_page(
+        user_id: int,
+        request: Request,
+        session: AsyncSession = Depends(get_session)
+):
     result = await session.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if user is None:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
 
     notes = await crud.get_user_notes(session, owner_id=user_id)
-    return templates.TemplateResponse("notes.html", {"request": request, "user": user, "notes": notes})
+    return templates.TemplateResponse(
+        request=request,
+        name="notes_user.html",
+        context={
+            "user": user,
+            "notes": notes,
+        },
+    )
 
 # Создание заметки
 
@@ -132,3 +180,32 @@ async def create_note_from(
 ):
     await crud.create_note(session, owner_id=user_id, title=title, content=content)
     return RedirectResponse(url=f"/users/{user_id}/notes_page", status_code=303)
+
+@app.get(
+    "/users/{user_id}/notes/create",
+    response_class=HTMLResponse,
+    tags=["front"],
+)
+async def create_note_page(
+        user_id: int,
+        request: Request,
+        session: AsyncSession = Depends(get_session),
+):
+    result = await session.execute(
+        select(User).where(User.id == user_id)
+    )
+
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Пользователь не найден",
+        )
+    return templates.TemplateResponse(
+        request=request,
+        name="notes.html",
+        context={
+            "user": user,
+        },
+    )
