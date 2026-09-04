@@ -17,6 +17,9 @@ env/
 # Environment variables
 # =========================
 .env
+.env.*
+!.env.example
+!.env.docker.example
 
 # =========================
 # IDE / Editors
